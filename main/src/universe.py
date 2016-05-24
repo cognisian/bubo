@@ -9,17 +9,21 @@ Implements the event loop
 class Universe:
     """ The Universe class to hold and manage the event loop,
     constructbuild the necessary I/O queues
-    """
-    def __init__(self):
-        pass
 
-    def run(loop):
+    loop - the event loop to run
+    init_conds - the initial coonditions
+    """
+    def __init__(self, loop, init_conds):
+        self._loop = loop
+        self._init_cond = frozenset((k, v) for k, v in init_conds.items())
+
+    def run():
         """ Gods method. """
 
         self._big_bang()
         self._inflation()
 
-        self._and_life()
+        self._and_action()
 
     def _big_bang(self):
         pass
@@ -27,23 +31,14 @@ class Universe:
     def _inflation(self):
         pass
 
-    def _and_life(self):
+    def _and_action(self):
         # And we are off
         try:
-            loop.run_forever()
+            self._loop.run_until_complete(self._life())
         finally:
-            loop.close()
+            self._loop.close()
 
-
-@asyncio.coroutine
-def slow_operation():
-    # yield from suspends execution until
-    # there's some result from asyncio.sleep
-    yield from asyncio.sleep(1)
-
-    # our task is done, here's the result
-    return 'Future is done!'
-
-
-def got_result(future):
-    print(future.result())
+    @asyncio.coroutine
+    def _life(self):
+        """ The event loop. """
+        pass
