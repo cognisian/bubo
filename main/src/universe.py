@@ -7,7 +7,7 @@ Implements the event loop
 
 import asyncio
 
-import from environment import Audio
+from environment.audio import Audio
 
 
 class Universe:
@@ -19,8 +19,7 @@ class Universe:
     """
     def __init__(self, loop, init_conds):
         self._loop = loop
-        self._init_cond = frozenset((k, v) for k, v in init_conds.items())
-        print(self._init_cond)
+        self._init_cond = init_conds
 
     def run(self):
         """ Gods method. """
@@ -32,11 +31,7 @@ class Universe:
     def _big_bang(self):
         print('bang')
 
-        (capture, playback) = self._init_conds['audio_devices']
-
-        capture_env = capture[1]
-        self._capture = Audio(capture_env['rate'], capture_env['channels'],
-                              capture_env['periods'])
+        self._create_audio
 
     def _inflation(self):
         print('boom')
@@ -48,16 +43,38 @@ class Universe:
             print('now we are off to the races')
             self._loop.run_until_complete(self._life())
         finally:
+            print('and that is all he wrote')
             self._loop.close()
 
     @asyncio.coroutine
     def _life(self):
         """ The event loop. """
         print("there was still nothing, but at least you could see it")
+
+        # Get current timestamp
+        # Read input sources
+
+        # Write ouput
+        # update timestamp
         pass
 
-    def _create_audio(self):
+    #
+    # Processing methods
+    #
+    @asyncio.coroutine
+    def _read_audio(self):
         pass
+
+    @asyncio.coroutine
+    def _write_audio(self):
+        pass
+    #
+    # Creation methods
+    #
+
+    def _create_audio(self):
+        self._capture = Audio.createCapture(self._init_cond)
+        self._playback = Audio.createPlayback(self._init_cond)
 
     def _create_video(self):
         pass
