@@ -1,5 +1,5 @@
 """
-Model the physical environment and translate to and from the
+Model the audio physical environment and translate to and from the
 Virtual Universe Machine
 
 """
@@ -33,59 +33,47 @@ class Audio:
 
     @staticmethod
     def createCapture(init_conds):
-        if 'sample_rate' in init_conds.keys():
-            sample_rate = init_conds.sample_rate
-
-        if 'num_samples' in init_conds.keys():
-            num_samples = init_conds.num_samples
-
-        if 'sample_data_size' in init_conds.keys():
-            sample_data_size = init_conds.sample_data_size
-
-        if 'internal_data_size' in init_conds.keys():
-            internal_data_size = init_conds.internal_data_size
+        sample_rate = init_conds['sample_rate']
+        num_samples = init_conds['num_samples']
+        samp_data_sz = init_conds['sample_data_size']
+        internal_data_size = init_conds['internal_data_size']
 
         return AudioCapture(rate=sample_rate, frame_buffer_size=num_samples,
-                            in_data_format=translate[sample_data_size.name],
+                            in_data_format=samp_data_sz,
                             buf_data_format=internal_data_size)
 
     @staticmethod
     def createPlayback(init_conds):
-        if 'sample_rate' in init_conds.keys():
-            sample_rate = init_conds.sample_rate
-
-        if 'num_samples' in init_conds.keys():
-            num_samples = init_conds.num_samples
-
-        if 'sample_data_size' in init_conds.keys():
-            sample_data_size = init_conds.sample_data_size
-
-        if 'internal_data_size' in init_conds.keys():
-            internal_data_size = init_conds.internal_data_size
+        sample_rate = init_conds['sample_rate']
+        num_samples = init_conds['num_samples']
+        samp_data_sz = init_conds['sample_data_size']
+        internal_data_size = init_conds['internal_data_size']
 
         return AudioPlayback(rate=sample_rate, frame_buffer_size=num_samples,
-                             input_type=translate[sample_data_size.name],
-                             intern_type=internal_data_size)
+                             in_data_format=samp_data_sz,
+                             buf_data_format=internal_data_size)
 
-    """ Constructor.
+    def __init__(self, sample_type=np.int16, intern_type=np.float16):
+        """ Constructor.
 
-    Set the data types which will impact how frequently the audio card will
-    respond.  The time the card takes to return will determine the period (T)
-    used in analysis of the signal
-    """
-    def __init__(self, in_data_format=alsa.PCM_FORMAT_S16_LE,
-                 buf_data_format=np.float16):
+        Set the data types which will impact how frequently the audio card will
+        respond.  The time the card takes to return will determine the
+        period (T) used in analysis of the signal
+
+        sample_type - np.dtype The data type to return samples in
+        intern_type - np.dtype The data type to do analysis in
+        """
 
         # Set the data that is fixed, when changing the __alsa_format, the
         # __format_type MUST also change accordingly
-        self._alsa_format = alsa.PCM_FORMAT_S16_LE
-        self._format_type = np.int16
-        self._internal_type = np.float16
-        self._bytes_frame = np.dtype(self.__format_type).itemsize
+        self._format_type = sample_type
+        self._internal_type = intern_type
+        self._alsa_format = Audio.translate[np.dtype(sample_type).name]
+        self._bytes_frame = np.dtype(self._format_type).itemsize
 
     """
     Normalize the audio samples from an array of integers into an array of
-    floats (-1, 1) with unity level.
+    floats (-1, 1).
     """
     def normalize(self, data):
         temp = np.zeros(shape=data.shape, dtype=self._internal_type)
@@ -121,8 +109,8 @@ class AudioCapture(Audio):
     capture.
     """
 
-    def __init__(self, rate=44100, channels=1, period=1024,
-                 in_data_format=alsa.PCM_FORMAT_S16_LE,
+    def __init__(self, rate=44100, channels=1, frame_buffer_size=1024,
+                 in_data_format=np.int16,
                  buf_data_format=np.float16):
         """
         A frame is the size (in bytes) of one sample on one channel.  The
@@ -144,7 +132,9 @@ class AudioCapture(Audio):
         self._rate = rate
         self._channels = channels
         self._frame_size = self._bytes_frame * channels
-        self._period_size = self._frame_size * period
+        self._period_size = frame_buffer_size
+
+        self._buffer_shape = (channels, self._period_size)
 
         self._initialize()
 
@@ -159,8 +149,15 @@ class AudioCapture(Audio):
 
     @asyncio.coroutine
     def read(self):
-        _, data = capture.read()
-        yield from np.fromstring(data, dtype=self._format_type)
+        """ Read one period of frame data. """
+        reading = True
+        while reading:
+            elems, data = self._device.read()
+            if elems > 0:
+                reading = False
+
+        return np.fromstring(data, dtype=self._format_type).reshape(
+            self._buffer_shape)
 
 
 class AudioPlayback(Audio):
@@ -168,7 +165,9 @@ class AudioPlayback(Audio):
     playback.
     """
 
-    def __init__(self, rate=44100, channels=1, period=1024):
+    def __init__(self, rate=44100, channels=1, frame_buffer_size=1024,
+                 in_data_format=np.int16,
+                 buf_data_format=np.float16):
         """
         Create and initialize the playback audio buffer
         """
@@ -179,15 +178,15 @@ class AudioPlayback(Audio):
         self._rate = rate
         self._channels = channels
         self._frame_size = self._bytes_frame * channels
-        self._period_size = self._frame_size * period
+        self._period_size = self._frame_size * frame_buffer_size
 
-        self._recording = False
+        self._buffer_shape = (channels, frame_buffer_size)
 
         self._initialize()
 
     def _initialize(self):
         """
-        Initialize write queue to avoid buffer underrun.
+        Initialize ALSA device for PCM_PLAYBACK and PCM_ASYNC.
         """
 
         self._device = alsa.PCM(type=alsa.PCM_PLAYBACK, mode=alsa.PCM_ASYNC)
@@ -197,8 +196,7 @@ class AudioPlayback(Audio):
         self._device.setformat(self._alsa_format)
         self._device.setperiodsize(self._period_size)
 
-        self._recording = True
-
+    # Write buffers
     @asyncio.coroutine
     def write(self, data):
         """

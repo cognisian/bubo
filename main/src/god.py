@@ -29,17 +29,18 @@ Everything is a quanta, God takes one sample of spacetime (x,y,z,t) within
 each sample of space time are 2 functions: sigma(x) for position; sigma(rho)
 for momentum
 """
-
-import asyncio
-import os
+import numpy as np
 
 import signal
+import os
+import asyncio
+import psutil as ps
 import functools
 
-import numpy as np
-import psutil as ps
-from multiprocessing import Process
 from universe import Universe
+
+# Create the event loop
+loop = asyncio.get_event_loop()
 
 # Gotta start with something
 initial_conditions = {
@@ -53,52 +54,47 @@ initial_conditions = {
     'num_samples': 1024,
     'sample_data_size': np.int16,
     'internal_data_size': np.float16,
+    'initial_energy': 512 * (2 ** np.dtype(np.int16).itemsize),
 }
 
 
-# Being
-def let_there_be_not_nothing():
-    """ This is where all the magic happens, the Logos
+def apocalypse(signame, universe):
+    """ Nothingness. The End Times. """
 
-    From the set of initial conditions, create and initialize the universe
-    """
+    # TEAR IT ALL DOWN
+    print("The END is NIGH for God %s" % os.getpid())
+    print("Apocalypse by %s signal" % signame)
 
-    # Create the event loop
-    loop = asyncio.get_event_loop()
+    universe.big_crunch()
+
+    # And done
+    if not loop.is_running():
+        loop.stop()
+
+    if not loop.is_closed():
+        loop.close()
+
+
+# Being in of itself
+def main():
 
     # Hook up God's Wrath
     for signame in ('SIGINT', 'SIGTERM'):
         loop.add_signal_handler(getattr(signal, signame),
                                 functools.partial(apocalypse, signame))
 
-    # now we are cooking with gas, boyo
-    return Universe(loop, initial_conditions)
-
-
-# Nothingness
-def apocalypse(signame):
-    """ The End Times. """
-
-    # TEAR IT ALL DOWN
-    print("The END is NIGH for God %s" % os.getpid())
-    print("Apocalypse by %s signal" % signame)
-
-    # And done
-    loop = asyncio.get_event_loop()
-    loop.stop()
-    loop.close()
-
-
-# Being in of itself
-def main():
     print("in the beginning")
-    universe = let_there_be_not_nothing()
+
+    # now we are cooking with gas, boyo
+    universe = Universe(initial_conditions)
     if universe is not None:
-        running_universe = Process(target=universe.run)
-        print("god said start")
-        running_universe.start()
-        running_universe.join()
-        apocalypse('SIGGOD')
+        # And we are off
+        try:
+            print('official race start time %d' % loop.time())
+            loop.run_until_complete(universe.life())
+        finally:
+            print('and that is all he wrote')
+            apocalypse('SIGGOD', universe)
 
 
 # Gotta start somewhere

@@ -17,60 +17,45 @@ class Universe:
     loop - the event loop to run
     init_conds - the initial coonditions
     """
-    def __init__(self, loop, init_conds):
-        self._loop = loop
+    def __init__(self, init_conds):
+
         self._init_cond = init_conds
 
-    def run(self):
+        self._capture = None
+        self._playback = None
+        self._alive = False
+
+        self.energy = None
+
+        self._create()
+
+    def _create(self):
         """ Gods method. """
 
         self._big_bang()
+
         self._inflation()
-        self._rolling()
 
     def _big_bang(self):
         print('bang')
 
-        self._create_audio
+        self.energy = self._init_cond['initial_energy']
+        print('we have %d to spend' % self.energy)
+
+        self._create_audio()
 
     def _inflation(self):
         print('boom')
-        pass
+        self.energy -= 100
 
-    def _rolling(self):
-        # And we are off
-        try:
-            print('now we are off to the races')
-            self._loop.run_until_complete(self._life())
-        finally:
-            print('and that is all he wrote')
-            self._loop.close()
+    def _get_energy(self):
+        """ Decrement and retrieve the current energy level. """
+        self.energy -= 1
+        if not self.energy > 1:
+            print('bust')
+            self.energy = 0
 
-    @asyncio.coroutine
-    def _life(self):
-        """ The event loop. """
-        print("there was still nothing, but at least you could see it")
-
-        # Get current timestamp
-        # Read input sources
-
-        # Write ouput
-        # update timestamp
-        pass
-
-    #
-    # Processing methods
-    #
-    @asyncio.coroutine
-    def _read_audio(self):
-        pass
-
-    @asyncio.coroutine
-    def _write_audio(self):
-        pass
-    #
-    # Creation methods
-    #
+        return self.energy
 
     def _create_audio(self):
         self._capture = Audio.createCapture(self._init_cond)
@@ -80,4 +65,18 @@ class Universe:
         pass
 
     def _create_network(self):
+        pass
+
+    @asyncio.coroutine
+    def life(self):
+        """ The event loop. """
+        print("there was still nothing, but at least you could see it")
+
+        while self._get_energy():
+            # Get current timestamp
+            # Read input sources
+            data = yield from self._capture.read()
+
+    def big_crunch(self):
+        print('ka-blammo!')
         pass
