@@ -1,3 +1,10 @@
+"""
+Model the physical environment and translate to and from the
+Virtual Universe Machine
+
+"""
+
+
 import alsaaudio as alsa
 import numpy as np
 
@@ -16,8 +23,8 @@ class Audio:
     Initialize the audio buffer as signed 16bit LE int with defaults:
 
     A frame is the size (in bytes) of one sample on one channel.  The
-    frame_size is the total size (in bytes) of one complete sample of the audio
-    environment (sample data type size (int16) * num of channels)
+    frame_size is the total size (in bytes) of all the frames for each channel
+    (sample data type size (int16) * num of channels)
     A period is the number of frames read/write per hardware cycle.  The
     period_size should be the total number of bytes in one period
     (frame_size * period)

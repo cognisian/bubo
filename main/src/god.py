@@ -42,12 +42,10 @@ that one is that
 that will be that too
 that one was true
 but that too could be either
-is neither this one nor that
-not this too
-That was true, that too is not true
+if neither this one nor this too are that one
+so that was true, but now that too is not true
 now that that too is not true
-
-So when will that be true?
+So can that be true?
 -------------------------------------------------------------------------------
 So God is the cybernetic knowledge of this system, he creates the symbols, and
 the rules to manipulate those symbols.  But God does not learn, God is not
@@ -66,8 +64,8 @@ relative between myself and everything else (frame of reference) and the answer
 is only valid within that frame of reference (ie the probability that my
 destiny is to start a Green Company may be small while someone else asking same
 question could get a higher probabilty).  In addition, the question is
-decomposable.  I can look for data based on probability of starting any
-business, probability of anyone starting green business, my views on green
+decomposable.  I can obtain a measurement/data based on probability of starting
+any business, probability of anyone starting green business, my views on green
 tech, etc.  So getting data and then mapping it relative to a frame of
 reference, is a Me_Operator multipled by a world PDF to return a Me_PDF.  Then
 build the me_Question operator (function) multiply it by the Me_PDF and you
@@ -84,11 +82,14 @@ import functools
 
 import numpy as np
 
+from multiprocessing import Process
 import psutil as ps
 import asyncio
 
 import pycuda.driver as cuda
 import pycuda.autoinit
+
+import alsaaudio as alsa
 
 from universe import Universe
 
@@ -96,14 +97,16 @@ from universe import Universe
 initial_conditions = {
     'debug': True,
     'version': 1,
-    'host': '127.0.0.1'
+    'host': '127.0.0.1',
     'port': 5556,
     'clock_rate': 1000,
-    'random': np.random,
+    'random': np.random.random,
     'num_cpu': ps.cpu_count(),
     'memory': ps.virtual_memory().available,
-    'num_devices': cuda.Device.count(),
-    'devices': [],
+    'compute_devices': (),
+    'audio_devices': (),
+    'video_devices': (),
+    'network_devices': (),
 }
 
 # Create the event loop
@@ -131,32 +134,62 @@ def extract_compute_env():
     """
 
     # Extract the computing environment
+    compute_env = []
     for devicenum in range(cuda.Device.count()):
         device = cuda.Device(devicenum)
 
+        maxWarps = int((device.max_threads_per_block + device.warp_size - 1) /
+                       device.warp_size)
+
         compute = device.compute_capability()
-        device_props['compute'] = "%d.%d" % (compute[0], compute[1])
+        compute_env.append((devicenum, (
+            ('compute_ver', "%d.%d" % (compute[0], compute[1])),
+            ('clock_rate', device.clock_rate),
+            ('concurrent_kernels', device.concurrent_kernels),
+            ('managed_memory', device.managed_memory),
+            ('total_memory', device.total_memory()),
+            ('total_constant_memory', device.total_constant_memory),
+            ('max_grid_dim_x', int(device.max_grid_dim_x)),
+            ('max_grid_dim_y', int(device.max_grid_dim_y)),
+            ('max_grid_dim_z',  int(device.max_grid_dim_z)),
+            ('multiprocessor_count',  device.multiprocessor_count),
+            ('max_threads_per_multiprocessor',
+                device.max_threads_per_multiprocessor),
+            ('max_shared_memory_per_multiprocessor',
+                device.max_shared_memory_per_multiprocessor),
+            ('max_registers_per_multiprocessor',
+                device.max_registers_per_multiprocessor),
+            ('max_threads_per_block', device.max_threads_per_block),
+            ('max_registers_per_block', device.max_registers_per_block),
+            ('max_block_dim_x', int(device.max_block_dim_x)),
+            ('max_block_dim_y', int(device.max_block_dim_y)),
+            ('max_block_dim_z', int(device.max_block_dim_z)),
+            ('warp_size', int(device.warp_size)),
+            ('max_warps_per_block', maxWarps)
+        )))
 
-        maxWarps = ((device.max_threads_per_block + device.warp_size - 1) //
-                    device.warp_size)
-        device['max_warps_per_block'] = maxWarps
-
-        initial_conditions.devices[devicenum] = device
+    initial_conditions['compute_devices'] = frozenset(compute_env)
 
 
 def extract_audio_env():
     """ Extract properties from the audio hardware environment. """
-    pass
+    audio_env = (
+        ('rate', 8000),
+        ('channels', 1),
+        ('periods', 1024),
+    )
+    initial_conditions['audio_devices'] = ((alsa.PCM_CAPTURE, audio_env),
+                                           (alsa.PCM_PLAYBACK, audio_env))
 
 
 def extract_video_env():
     """ Extract properties from the video hardware environment. """
-    pass
+    initial_conditions['video_devices'] = (0, '')
 
 
 def extract_network_env():
     """ Extract properties from the network environemnt. """
-    pass
+    initial_conditions['network_devices'] = (0, '')
 
 
 #
@@ -191,12 +224,27 @@ def let_there_be_not_nothing():
 def apocalypse(signame):
     """ The End Times. """
 
-    print("The END is NIGH for universe %s" % os.getpid())
+    # TEAR IT ALL DOWN
+    print("The END is NIGH for God %s" % os.getpid())
     print("Apocalypse by %s signal" % signame)
-    loop.stop()
 
-# Gotta start somewhere
-if '__name__' == '__main__':
+    # And done
+    loop.stop()
+    loop.close()
+
+
+# Being in of itself
+def main():
+    print("in the beginning")
     universe = let_there_be_not_nothing()
     if universe is not None:
-        universe.run()
+        running_universe = Process(target=universe.run)
+        print("god said start")
+        running_universe.start()
+        running_universe.join()
+        apocalypse('SIGGOD')
+
+
+# Gotta start somewhere
+if __name__ == '__main__':
+    main()
