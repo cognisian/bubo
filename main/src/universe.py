@@ -7,7 +7,11 @@ Implements the event loop
 
 import asyncio
 
+import pycuda.driver as cuda
+import pycuda.autoinit
+
 from environment.audio import Audio
+from environment.compute import Compute
 
 
 class Universe:
@@ -19,21 +23,16 @@ class Universe:
     """
     def __init__(self, init_conds):
 
+        self.energy = None
+
         self._init_cond = init_conds
 
         self._capture = None
         self._playback = None
-        self._alive = False
 
-        self.energy = None
-
-        self._create()
-
-    def _create(self):
-        """ Gods method. """
+        self._computes = []
 
         self._big_bang()
-
         self._inflation()
 
     def _big_bang(self):
@@ -43,9 +42,14 @@ class Universe:
         print('we have %d to spend' % self.energy)
 
         self._create_audio()
+        self._create_video()
+        self._create_network()
+
+        self._create_compute()
 
     def _inflation(self):
         print('boom')
+
         self.energy -= 100
 
     def _get_energy(self):
@@ -66,6 +70,11 @@ class Universe:
 
     def _create_network(self):
         pass
+
+    def _create_compute(self):
+
+        for devicenum in range(cuda.Device.count()):
+            self._computes.append(Compute(devicenum))
 
     @asyncio.coroutine
     def life(self):

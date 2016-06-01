@@ -88,8 +88,8 @@ def main():
     # now we are cooking with gas, boyo
     universe = Universe(initial_conditions)
     if universe is not None:
-        # And we are off
         try:
+            # And we are off
             print('official race start time %d' % loop.time())
             loop.run_until_complete(universe.life())
         finally:
