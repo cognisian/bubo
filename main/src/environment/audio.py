@@ -3,15 +3,17 @@ Model the audio physical environment and translate to and from the
 Virtual Universe Machine
 
 """
-
+import math
 import asyncio
 
 import numpy as np
 
 import alsaaudio as alsa
 
+# import enviornment as env
 
-class Audio:
+
+class Audio(object):
     """
     A class implementing buffered audio I/O.
 
@@ -70,6 +72,14 @@ class Audio:
         self._internal_type = intern_type
         self._alsa_format = Audio.translate[np.dtype(sample_type).name]
         self._bytes_frame = np.dtype(self._format_type).itemsize
+
+    def speed_of_audio(self, temp):
+        """ Returns the speed of sound in air at 1atm based on the current
+        energy (temperature) of the environment
+
+        return speed is in meters per second
+        """
+        return 20.05 * math.sqrt(temp + 273.15)
 
     """
     Normalize the audio samples from an array of integers into an array of
@@ -135,10 +145,9 @@ class AudioCapture(Audio):
         self._period_size = frame_buffer_size
 
         self._buffer_shape = (channels, self._period_size)
+        self._device = None
 
-        self._initialize()
-
-    def _initialize(self):
+    def on_load(self):
         """ Setup capture parameters. """
 
         self._device = alsa.PCM(type=alsa.PCM_CAPTURE, mode=alsa.PCM_ASYNC)
@@ -147,7 +156,7 @@ class AudioCapture(Audio):
         self._device.setformat(self._alsa_format)
         self._device.setperiodsize(self._period_size)
 
-    @asyncio.coroutine
+    # @asyncio.coroutine
     def read(self):
         """ Read one period of frame data. """
         reading = True
@@ -156,8 +165,8 @@ class AudioCapture(Audio):
             if elems > 0:
                 reading = False
 
-        return np.fromstring(data, dtype=self._format_type).reshape(
-            self._buffer_shape)
+        return self.normalize(np.fromstring(data, dtype=self._format_type).
+                              reshape(self._buffer_shape))
 
 
 class AudioPlayback(Audio):
@@ -205,4 +214,4 @@ class AudioPlayback(Audio):
 
         data - nparray of data to write
         """
-        yield from self._device.write(data.tostring())
+        yield from self._device.write(self.denormalize(data).tostring())

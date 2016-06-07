@@ -14,11 +14,13 @@ from environment.audio import Audio
 from environment.compute import Compute
 
 
-class Universe:
+class Universe(object):
     """ The Universe class to hold and manage the event loop,
-    constructbuild the necessary I/O queues
+    construct the communication ports to manage I/O for:
+        + timer
+        + CPU <-> HW (input signal)
+        + CPU <-> GPU calculations and data streaming
 
-    loop - the event loop to run
     init_conds - the initial coonditions
     """
     def __init__(self, init_conds):
@@ -41,20 +43,21 @@ class Universe:
         self.energy = self._init_cond['initial_energy']
         print('we have %d to spend' % self.energy)
 
+        # PLUGIN STRUCTURE HERE
+        self._create_time()
         self._create_audio()
         self._create_video()
-        self._create_network()
-
-        self._create_compute()
 
     def _inflation(self):
         print('boom')
 
         self.energy -= 100
+        for devicenum in range(cuda.Device.count()):
+            self._computes.append(Compute(devicenum))
 
     def _get_energy(self):
         """ Decrement and retrieve the current energy level. """
-        self.energy -= 1
+        self.energy -= self._init_cond['planck_quantum']
         if not self.energy > 1:
             print('bust')
             self.energy = 0
@@ -70,11 +73,6 @@ class Universe:
 
     def _create_network(self):
         pass
-
-    def _create_compute(self):
-
-        for devicenum in range(cuda.Device.count()):
-            self._computes.append(Compute(devicenum))
 
     @asyncio.coroutine
     def life(self):

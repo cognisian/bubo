@@ -54,7 +54,9 @@ initial_conditions = {
     'num_samples': 1024,
     'sample_data_size': np.int16,
     'internal_data_size': np.float16,
-    'initial_energy': 512 * (2 ** np.dtype(np.int16).itemsize),
+    'planck_quantum': 1.0,  # Energy per sec,everything is a int multiple of it
+    'initial_energy': float(2 ** (np.dtype(np.int16).itemsize * 8)),
+    'environments': ['Time', 'AudioCapture'],
 }
 
 
