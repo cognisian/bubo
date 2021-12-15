@@ -1,4 +1,5 @@
-""" Create and initialize resources and returns a running Virtual Universe
+""" 
+Create and initialize resources and returns a running Virtual Universe
 Machine
 
 So God is the cybernetic knowledge of this system, he creates the symbols, and
@@ -99,6 +100,6 @@ def main():
             apocalypse('SIGGOD', universe)
 
 
-# Gotta start somewhere
+# Something from Nothing
 if __name__ == '__main__':
     main()

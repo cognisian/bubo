@@ -1,16 +1,13 @@
 """
 Model the audio physical environment and translate to and from the
-Virtual Universe Machine
-
+Virtual Unive
 """
-import math
 import asyncio
-
-import numpy as np
+import math
 
 import alsaaudio as alsa
 
-# import enviornment as env
+import numpy as np
 
 
 class Audio(object):
@@ -159,6 +156,7 @@ class AudioCapture(Audio):
     # @asyncio.coroutine
     def read(self):
         """ Read one period of frame data. """
+        
         reading = True
         while reading:
             elems, data = self._device.read()

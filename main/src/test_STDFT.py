@@ -1,8 +1,6 @@
-import math
-import numpy as np
-from scipy import signal as sg
-
 from environment.audio import Audio
+
+import numpy as np
 
 initial_conditions = {
     'debug': True,
@@ -57,6 +55,7 @@ def main():
 
     # From physical properties of ear wavelength = 4L L length of cochlea
     velocity = capture.speed_of_audio(25.)
+
 
 if __name__ == '__main__':
     main()

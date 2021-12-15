@@ -1,12 +1,14 @@
 import numpy as np
 
+import pycuda.autoinit
+
+import pycuda.driver as cuda
 import pycuda.gpuarray as gpuarray
 from pycuda.compiler import SourceModule
-import pycuda.driver as cuda
-import pycuda.autoinit
 
 
 def phase1_device(d_keys, d_offset, d_length, count, bucketCount):
+
     mod = SourceModule("""
     #include <stdio.h>
     typedef unsigned long long  KEY_T ;
@@ -28,7 +30,10 @@ def phase1_device(d_keys, d_offset, d_length, count, bucketCount):
                 unsigned int* count,
                 unsigned int bucketCount){
 
-        unsigned int tid = (blockDim.x*blockDim.y * gridDim.x*blockIdx.y) + (blockDim.x*blockDim.y*blockIdx.x)+(blockDim.x*threadIdx.y)+threadIdx.x;
+        unsigned int tid = (blockDim.x * blockDim.y * gridDim.x * blockIdx.y) +
+        (blockDim.x*blockDim.y * blockIdx.x) + (blockDim.x * threadIdx.y) +
+        threadIdx.x;
+
         if(tid<length){
             KEY_T key = keys[tid];
             unsigned int bucket = hash_h(key,bucketCount);
@@ -60,7 +65,9 @@ def phase1_device(d_keys, d_offset, d_length, count, bucketCount):
     print('Finished. Leaving.')
     print(d_offset)
 
+
 if __name__ == '__main__':
+
     d_keys = range(0, 1024)
     d_offset = range(1024, 2048)
     d_length = 1024

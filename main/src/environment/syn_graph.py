@@ -1,6 +1,4 @@
-import numpy as np
-
-import networkx as nx
+from networkx import nx
 
 
 class PreSynaptic:
@@ -34,8 +32,8 @@ class PreSynaptic:
         print('extracting feeddback signal')
 
     def output(self):
-        print('sent signal of %d ' % release)
-        return release
+        print('sent signal of %d ' % self.release)
+        return self.release
 
     def action(self, delta):
         print('action from %s' % delta)
